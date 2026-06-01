@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>NEXUS-PAIR v2 | WhatsApp Bot Connector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@200;400;600;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#02080c;
+      --panel:#060f14;
+      --panel2:#091318;
+      --border:#0d2535;
+      --border-hi:#134060;
+      --green:#00ff88;
+      --green-dim:#00cc6a;
+      --green-glow:rgba(0,255,136,0.18);
+      --cyan:#00e5ff;
+      --cyan-dim:#00b8cc;
+      --amber:#ffb300;
+      --red:#ff3d5a;
+      --text:#cce8f4;
+      --text-dim:#4a7a8a;
+      --text-muted:#1e3a46;
+      --mono:'Share Tech Mono',monospace;
+      --head:'Exo 2',sans-serif;
+      --body:'Rajdhani',sans-serif;
+    }
+    html{scroll-behavior:smooth}
+    body{
+      background:var(--bg);
+      color:var(--text);
+      font-family:var(--body);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+    /* Grid bg */
+    body::before{
+      content:'';position:fixed;inset:0;
+      background-image:linear-gradient(rgba(0,229,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.025) 1px,transparent 1px);
+      background-size:44px 44px;pointer-events:none;z-index:0;
+    }
+    body::after{
+      content:'';position:fixed;inset:0;
+      background:radial-gradient(ellipse 70% 45% at 50% -5%,rgba(0,255,136,.08) 0%,transparent 65%),
+                 radial-gradient(ellipse 50% 50% at 100% 100%,rgba(0,229,255,.05) 0%,transparent 55%);
+      pointer-events:none;z-index:0;
+    }
+    .scanlines{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:999}
+
+    /* Layout */
+    .wrapper{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:36px 16px 64px}
+
+    /* Header */
+    header{text-align:center;margin-bottom:40px;animation:fadeDown .7s ease both}
+    .logo-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:6px}
+    .logo-icon{
+      width:46px;height:46px;border:2px solid var(--green);border-radius:12px;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 0 24px var(--green-glow),inset 0 0 14px rgba(0,255,136,.07);
+      animation:pulse 3s ease-in-out infinite;
+    }
+    .logo-icon svg{width:26px;height:26px;fill:var(--green)}
+    @keyframes pulse{0%,100%{box-shadow:0 0 24px var(--green-glow)}50%{box-shadow:0 0 40px rgba(0,255,136,.35)}}
+    h1{
+      font-family:var(--head);font-size:clamp(26px,7vw,44px);font-weight:900;
+      letter-spacing:.1em;text-transform:uppercase;
+      background:linear-gradient(135deg,#fff 0%,var(--green) 55%,var(--cyan) 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .v-badge{
+      font-family:var(--mono);font-size:10px;background:rgba(0,255,136,.12);
+      border:1px solid rgba(0,255,136,.3);color:var(--green);
+      padding:2px 8px;border-radius:4px;letter-spacing:.15em;margin-left:6px;
+      vertical-align:middle;position:relative;top:-4px;
+    }
+    .tagline{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:.22em;text-transform:uppercase;margin-top:8px}
+    .tagline em{color:var(--cyan);font-style:normal}
+
+    /* Wake-up banner */
+    .wake-banner{
+      width:100%;max-width:500px;
+      background:rgba(255,179,0,.07);border:1px solid rgba(255,179,0,.25);
+      border-radius:10px;padding:12px 16px;
+      display:none;align-items:center;gap:12px;
+      margin-bottom:16px;animation:fadeUp .4s ease both;
+    }
+    .wake-banner.show{display:flex}
+    .wake-icon{font-size:18px;flex-shrink:0}
+    .wake-text{font-family:var(--mono);font-size:11px;color:var(--amber);line-height:1.6}
+    .wake-text strong{color:#ffd54f}
+    .wake-bar{width:100%;height:3px;background:rgba(255,179,0,.15);border-radius:2px;margin-top:6px;overflow:hidden}
+    .wake-bar-fill{height:100%;background:var(--amber);border-radius:2px;animation:wakeProgress 60s linear forwards}
+    @keyframes wakeProgress{from{width:0%}to{width:100%}}
+
+    /* Card */
+    .card{
+      width:100%;max-width:500px;
+      background:var(--panel);border:1px solid var(--border-hi);
+      border-radius:18px;padding:28px;
+      position:relative;overflow:hidden;
+      box-shadow:0 0 0 1px rgba(0,255,136,.04),0 24px 70px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.03);
+      animation:fadeUp .7s ease .15s both;
+    }
+    .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),var(--cyan),transparent);opacity:.9}
+    .card-corner-tr{position:absolute;top:12px;right:12px;width:18px;height:18px;border-top:2px solid var(--green);border-right:2px solid var(--green);opacity:.35;border-radius:0 4px 0 0}
+    .card-corner-bl{position:absolute;bottom:12px;left:12px;width:18px;height:18px;border-bottom:2px solid var(--cyan);border-left:2px solid var(--cyan);opacity:.35;border-radius:0 0 0 4px}
+
+    /* Status bar */
+    .status-bar{
+      display:flex;align-items:center;justify-content:space-between;
+      background:rgba(0,229,255,.03);border:1px solid var(--border);
+      border-radius:8px;padding:9px 14px;margin-bottom:24px;
+      font-family:var(--mono);font-size:11px;
+    }
+    .status-left{display:flex;align-items:center;gap:8px}
+    .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s ease-in-out infinite;flex-shrink:0}
+    .dot.amber{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+    .dot.red{background:var(--red);box-shadow:0 0 8px var(--red);animation:none}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+    #statusText{color:var(--green);letter-spacing:.1em}
+    .status-right{display:flex;align-items:center;gap:8px;color:var(--text-dim)}
+    .status-right span{color:var(--cyan)}
+    .sess-bar{width:70px;height:3px;background:rgba(0,229,255,.1);border-radius:2px;overflow:hidden}
+    .sess-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .6s ease}
+
+    /* Input */
+    .field-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px}
+    .phone-wrap{
+      display:flex;align-items:center;
+      background:rgba(0,0,0,.4);border:1px solid var(--border-hi);
+      border-radius:10px;overflow:hidden;
+      transition:border-color .25s,box-shadow .25s;margin-bottom:16px;
+    }
+    .phone-wrap:focus-within{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,255,136,.1)}
+    .phone-pre{
+      font-family:var(--mono);font-size:13px;color:var(--green-dim);
+      padding:0 14px;height:52px;display:flex;align-items:center;
+      border-right:1px solid var(--border-hi);background:rgba(0,255,136,.03);white-space:nowrap;gap:6px;
+    }
+    input[type=tel]{
+      flex:1;background:transparent;border:none;outline:none;
+      color:var(--text);font-family:var(--mono);font-size:16px;
+      padding:0 16px;height:52px;letter-spacing:.05em;
+    }
+    input[type=tel]::placeholder{color:var(--text-muted);font-size:12px}
+
+    /* Retry notice */
+    .retry-notice{
+      font-family:var(--mono);font-size:10px;color:var(--text-dim);
+      text-align:center;margin-bottom:12px;display:none;letter-spacing:.1em;
+    }
+    .retry-notice.show{display:block}
+    .retry-notice span{color:var(--amber)}
+
+    /* Button */
+    .btn-gen{
+      width:100%;padding:15px;background:transparent;
+      border:2px solid var(--green);border-radius:10px;
+      color:var(--green);font-family:var(--head);font-size:15px;
+      font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+      cursor:pointer;position:relative;overflow:hidden;transition:all .3s;
+    }
+    .btn-gen::before{content:'';position:absolute;inset:0;background:var(--green);transform:scaleX(0);transform-origin:left;transition:transform .3s;z-index:0}
+    .btn-gen:hover:not(:disabled)::before{transform:scaleX(1)}
+    .btn-gen:hover:not(:disabled){color:#000;box-shadow:0 0 30px rgba(0,255,136,.3)}
+    .btn-gen span{position:relative;z-index:1}
+    .btn-gen:disabled{opacity:.45;cursor:not-allowed;border-color:var(--text-muted);color:var(--text-muted)}
+    .btn-gen:disabled::before{display:none}
+
+    /* Loader */
+    .loader{display:flex;align-items:center;justify-content:center;gap:10px}
+    .dots{display:flex;gap:4px}
+    .dots i{width:5px;height:5px;background:currentColor;border-radius:50%;animation:db 1.2s ease-in-out infinite;display:inline-block}
+    .dots i:nth-child(2){animation-delay:.2s}
+    .dots i:nth-child(3){animation-delay:.4s}
+    @keyframes db{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
+
+    /* Progress steps */
+    .progress-steps{
+      display:none;margin:16px 0 0;gap:6px;flex-direction:column;
+    }
+    .progress-steps.show{display:flex}
+    .ps{
+      display:flex;align-items:center;gap:10px;
+      font-family:var(--mono);font-size:11px;color:var(--text-muted);
+      padding:7px 10px;border-radius:6px;border:1px solid transparent;
+      transition:all .4s;
+    }
+    .ps.active{color:var(--cyan);border-color:rgba(0,229,255,.15);background:rgba(0,229,255,.04)}
+    .ps.done{color:var(--green);border-color:rgba(0,255,136,.15);background:rgba(0,255,136,.04)}
+    .ps.error{color:var(--red);border-color:rgba(255,61,90,.15);background:rgba(255,61,90,.04)}
+    .ps-icon{width:18px;text-align:center;flex-shrink:0}
+    .ps-spin{display:inline-block;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Divider */
+    .divider{display:flex;align-items:center;gap:10px;margin:22px 0;opacity:.25}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border-hi)}
+    .divider span{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--text-muted)}
+
+    /* Result */
+    .result{display:none;animation:fadeUp .5s ease both}
+    .result.show{display:block}
+    .code-box{
+      background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.22);
+      border-radius:12px;padding:26px;text-align:center;position:relative;overflow:hidden;
+    }
+    .code-box::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,255,136,.07) 0%,transparent 70%)}
+    .code-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.3em;color:var(--green-dim);text-transform:uppercase;margin-bottom:14px}
+    .code-val{
+      font-family:var(--mono);font-size:clamp(28px,9vw,44px);font-weight:bold;
+      letter-spacing:.12em;color:#fff;text-shadow:0 0 32px rgba(0,255,136,.5);
+      position:relative;z-index:1;
+    }
+    .code-val .sep{color:var(--green);margin:0 3px}
+    .code-expiry{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:10px}
+    .code-expiry span{color:var(--cyan)}
+    .code-expiry span.expired{color:var(--red)}
+    .btn-copy{
+      margin-top:18px;width:100%;padding:12px;
+      background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.22);
+      border-radius:8px;color:var(--cyan);font-family:var(--head);
+      font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+      cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;
+    }
+    .btn-copy:hover{background:rgba(0,229,255,.14);border-color:var(--cyan);box-shadow:0 0 20px rgba(0,229,255,.15)}
+    .btn-copy.copied{background:rgba(0,255,136,.12);border-color:var(--green);color:var(--green)}
+    .btn-retry{
+      margin-top:10px;width:100%;padding:11px;
+      background:transparent;border:1px solid var(--border-hi);
+      border-radius:8px;color:var(--text-dim);font-family:var(--head);
+      font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+      cursor:pointer;transition:all .25s;
+    }
+    .btn-retry:hover{border-color:var(--green);color:var(--green)}
+
+    /* Error */
+    .err-box{
+      display:none;background:rgba(255,61,90,.07);border:1px solid rgba(255,61,90,.25);
+      border-radius:10px;padding:13px 16px;margin-top:14px;
+      font-family:var(--mono);font-size:11px;color:var(--red);
+      animation:fadeUp .4s ease both;line-height:1.6;
+    }
+    .err-box.show{display:block}
+
+    /* Instructions */
+    .instructions{width:100%;max-width:500px;margin-top:24px;animation:fadeUp .7s ease .3s both}
+    .instructions h3{font-family:var(--mono);font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
+    .steps{display:flex;flex-direction:column;gap:8px}
+    .step{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:rgba(255,255,255,.015);border:1px solid var(--border);border-radius:8px;transition:border-color .25s}
+    .step:hover{border-color:var(--border-hi)}
+    .sn{
+      font-family:var(--mono);font-size:10px;color:var(--green);
+      background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.18);
+      border-radius:4px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;
+    }
+    .st{font-family:var(--body);font-size:14px;color:var(--text-dim);line-height:1.5;font-weight:400}
+    .st strong{color:var(--text);font-weight:600}
+
+    footer{margin-top:40px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:.2em;animation:fadeUp .7s ease .5s both}
+    footer span{color:var(--green)}
+
+    @keyframes fadeDown{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  </style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="wrapper">
+
+  <header>
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 2C6.477 2 2 6.484 2 12.017c0 1.771.463 3.434 1.272 4.876L2 22l5.237-1.243A9.953 9.953 0 0012 22c5.523 0 10-4.478 10-10S17.522 2 12 2zm.001 18.334a8.293 8.293 0 01-4.224-1.152l-.303-.18-3.108.737.78-3.02-.197-.31A8.293 8.293 0 013.667 12c0-4.6 3.737-8.333 8.333-8.333 4.597 0 8.333 3.733 8.333 8.333 0 4.6-3.736 8.334-8.333 8.334z"/></svg>
+      </div>
+      <h1>Nexus-Pair<span class="v-badge">v2</span></h1>
+    </div>
+    <p class="tagline">WhatsApp Bot Connector &mdash; <em>Instant Pairing</em></p>
+  </header>
+
+  <!-- Wake-up banner -->
+  <div class="wake-banner" id="wakeBanner">
+    <div class="wake-icon">⚡</div>
+    <div class="wake-text">
+      <strong>Server is waking up</strong> — this takes ~60 seconds on free tier.<br>
+      Please wait, do not refresh the page.
+      <div class="wake-bar"><div class="wake-bar-fill"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-corner-tr"></div>
+    <div class="card-corner-bl"></div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <div class="status-left">
+        <div class="dot" id="sDot"></div>
+        <span id="statusText">CHECKING...</span>
+      </div>
+      <div class="status-right">
+        <span id="sSess">--</span>/<span id="sMax">50</span> sessions
+        <div class="sess-bar"><div class="sess-bar-fill" id="sBar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- Phone input -->
+    <div class="field-label">WhatsApp Number</div>
+    <div class="phone-wrap">
+      <div class="phone-pre">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+        +
+      </div>
+      <input type="tel" id="phoneInput" placeholder="923001234567  (country code + number)" autocomplete="off" inputmode="numeric"/>
+    </div>
+
+    <div class="retry-notice" id="retryNotice">Auto-retrying... attempt <span id="retryCount">2</span>/3</div>
+
+    <button class="btn-gen" id="genBtn" onclick="generate()">
+      <span id="btnText">Generate Pairing Code</span>
+    </button>
+
+    <!-- Progress steps -->
+    <div class="progress-steps" id="progressSteps">
+      <div class="ps" id="ps1"><div class="ps-icon">○</div><div>Waking up server</div></div>
+      <div class="ps" id="ps2"><div class="ps-icon">○</div><div>Connecting to WhatsApp</div></div>
+      <div class="ps" id="ps3"><div class="ps-icon">○</div><div>Requesting pairing code</div></div>
+      <div class="ps" id="ps4"><div class="ps-icon">○</div><div>Code ready</div></div>
+    </div>
+
+    <div class="err-box" id="errBox"></div>
+
+    <div class="divider"><span>OUTPUT</span></div>
+
+    <!-- Result -->
+    <div class="result" id="result">
+      <div class="code-box">
+        <div class="code-lbl">▪ Your Pairing Code</div>
+        <div class="code-val" id="codeVal">---- - ----</div>
+        <div class="code-expiry">Expires in <span id="countdown">08:00</span></div>
+      </div>
+      <button class="btn-copy" id="copyBtn" onclick="copyCode()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        Copy Code
+      </button>
+      <button class="btn-retry" onclick="generate()">↻ Generate New Code</button>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="instructions">
+    <h3>▪ How to connect</h3>
+    <div class="steps">
+      <div class="step"><div class="sn">1</div><div class="st">Enter your number with <strong>country code</strong> — no + or spaces (e.g. 923001234567)</div></div>
+      <div class="step"><div class="sn">2</div><div class="st">Tap <strong>Generate</strong> and wait for your 8-digit pairing code</div></div>
+      <div class="step"><div class="sn">3</div><div class="st">Open WhatsApp → <strong>Linked Devices</strong> → Link a Device → <strong>Link with phone number</strong></div></div>
+      <div class="step"><div class="sn">4</div><div class="st">Enter the code — your bot goes <strong>online instantly 🟢</strong></div></div>
+    </div>
+  </div>
+
+  <footer>&copy; 2026 NEXUS-PAIR v2 &mdash; Powered By <span>NEXUS-AI</span></footer>
+</div>
+
+<script>
+  // ── CONFIG ─────────────────────────────────────────────────────────────────
+  const SERVER = "https://whatsappbot-connector.onrender.com";
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let currentCode = "";
+  let countdownTimer = null;
+  let serverOnline = false;
+  let retryAttempt = 0;
+
+  // ── Server status ──────────────────────────────────────────────────────────
+  async function checkStatus() {
+    try {
+      const res = await fetch(`${SERVER}/status`, { signal: AbortSignal.timeout(6000) });
+      const d = await res.json();
+      document.getElementById("sDot").className = "dot";
+      document.getElementById("statusText").textContent = "SERVER ONLINE";
+      document.getElementById("statusText").style.color = "var(--green)";
+      document.getElementById("sSess").textContent = d.active ?? 0;
+      document.getElementById("sMax").textContent = d.limit ?? 50;
+      const pct = ((d.active / d.limit) * 100) || 0;
+      document.getElementById("sBar").style.width = pct + "%";
+      serverOnline = true;
+      hideBanner();
+    } catch {
+      document.getElementById("sDot").className = "dot red";
+      document.getElementById("statusText").textContent = "SERVER OFFLINE";
+      document.getElementById("statusText").style.color = "var(--red)";
+      serverOnline = false;
+    }
+  }
+  checkStatus();
+  setInterval(checkStatus, 20_000);
+
+  // ── Wake-up banner ─────────────────────────────────────────────────────────
+  function showBanner() { document.getElementById("wakeBanner").classList.add("show"); }
+  function hideBanner() { document.getElementById("wakeBanner").classList.remove("show"); }
+
+  // ── Progress steps ─────────────────────────────────────────────────────────
+  function setStep(n, state) {
+    // state: 'active' | 'done' | 'error' | 'idle'
+    const el = document.getElementById("ps" + n);
+    el.className = "ps " + (state === "idle" ? "" : state);
+    const icon = el.querySelector(".ps-icon");
+    if (state === "active") icon.innerHTML = '<span class="ps-spin">◌</span>';
+    else if (state === "done") icon.textContent = "✓";
+    else if (state === "error") icon.textContent = "✗";
+    else icon.textContent = "○";
+  }
+
+  function resetSteps() {
+    [1,2,3,4].forEach(n => setStep(n, "idle"));
+    document.getElementById("progressSteps").classList.remove("show");
+  }
+
+  function showSteps() {
+    document.getElementById("progressSteps").classList.add("show");
+  }
+
+  // ── Main generate function ─────────────────────────────────────────────────
+  async function generate() {
+    const phone = document.getElementById("phoneInput").value.trim().replace(/\D/g, "");
+    const btn = document.getElementById("genBtn");
+    const btnText = document.getElementById("btnText");
+
+    hideErr();
+    document.getElementById("result").classList.remove("show");
+    document.getElementById("retryNotice").classList.remove("show");
+    retryAttempt = 0;
+
+    if (!phone || phone.length < 7) {
+      showErr("Enter a valid number with country code (e.g. 923001234567)");
+      return;
+    }
+
+    btn.disabled = true;
+    btnText.innerHTML = `<div class="loader">Connecting<div class="dots"><i></i><i></i><i></i></div></div>`;
+    showSteps();
+
+    // Step 1: ping server / wake up
+    setStep(1, "active");
+    let woke = false;
+    let wakeAttempts = 0;
+
+    while (!woke && wakeAttempts < 3) {
+      try {
+        const r = await fetch(`${SERVER}/ping`, { signal: AbortSignal.timeout(8000) });
+        if (r.ok) { woke = true; }
+      } catch (_) {
+        wakeAttempts++;
+        if (wakeAttempts === 1) showBanner();
+        await sleep(4000);
+      }
+    }
+
+    if (!woke) {
+      setStep(1, "error");
+      showErr("Server is unreachable. It may still be waking up — please wait 60 seconds and try again.");
+      reset(btn, btnText);
+      return;
+    }
+
+    hideBanner();
+    setStep(1, "done");
+
+    // Step 2 & 3: generate with auto-retry
+    setStep(2, "active");
+    let pairingCode = null;
+    const maxRetries = 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      if (attempt > 1) {
+        document.getElementById("retryCount").textContent = attempt;
+        document.getElementById("retryNotice").classList.add("show");
+        await sleep(2000);
+      }
+
+      try {
+        setStep(2, "active");
+        const res = await fetch(`${SERVER}/generate-pair`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone }),
+          signal: AbortSignal.timeout(30_000),
+        });
+
+        const data = await res.json();
+
+        if (data.error) throw new Error(data.error);
+        if (!data.pairingCode) throw new Error("No code returned.");
+
+        pairingCode = data.pairingCode;
+        break;
+
+      } catch (err) {
+        if (attempt === maxRetries) {
+          setStep(2, "error");
+          setStep(3, "error");
+          showErr(err.message || "Failed after 3 attempts. Please try again.");
+          reset(btn, btnText);
+          return;
+        }
+      }
+    }
+
+    setStep(2, "done");
+    setStep(3, "done");
+    setStep(4, "done");
+    document.getElementById("retryNotice").classList.remove("show");
+
+    currentCode = pairingCode;
+    displayCode(pairingCode);
+    startCountdown(480); // 8 minutes
+
+    reset(btn, btnText);
+  }
+
+  // ── Display code ───────────────────────────────────────────────────────────
+  function displayCode(code) {
+    const parts = code.replace(/-/g, "").match(/.{1,4}/g) || [code];
+    document.getElementById("codeVal").innerHTML = parts.join('<span class="sep">-</span>');
+    document.getElementById("result").classList.add("show");
+    document.getElementById("copyBtn").textContent = "Copy Code";
+    document.getElementById("copyBtn").className = "btn-copy";
+  }
+
+  // ── Copy ───────────────────────────────────────────────────────────────────
+  function copyCode() {
+    if (!currentCode) return;
+    navigator.clipboard.writeText(currentCode.replace(/-/g, "")).then(() => {
+      const b = document.getElementById("copyBtn");
+      b.textContent = "✓  Copied!";
+      b.classList.add("copied");
+      setTimeout(() => { b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg> Copy Code'; b.classList.remove("copied"); }, 3000);
+    });
+  }
+
+  // ── Countdown ──────────────────────────────────────────────────────────────
+  function startCountdown(secs) {
+    if (countdownTimer) clearInterval(countdownTimer);
+    let r = secs;
+    const el = document.getElementById("countdown");
+    el.className = "";
+    function tick() {
+      const m = String(Math.floor(r / 60)).padStart(2,"0");
+      const s = String(r % 60).padStart(2,"0");
+      el.textContent = `${m}:${s}`;
+      if (r <= 0) { clearInterval(countdownTimer); el.textContent = "EXPIRED"; el.className = "expired"; }
+      r--;
+    }
+    tick();
+    countdownTimer = setInterval(tick, 1000);
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function showErr(msg) {
+    const e = document.getElementById("errBox");
+    e.textContent = "⚠  " + msg;
+    e.classList.add("show");
+  }
+  function hideErr() { document.getElementById("errBox").classList.remove("show"); }
+  function reset(btn, btnText) {
+    btn.disabled = false;
+    btnText.textContent = "Generate Pairing Code";
+  }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  document.getElementById("phoneInput").addEventListener("keydown", e => { if (e.key === "Enter") generate(); });
+</script>
+</body>
+</html>
